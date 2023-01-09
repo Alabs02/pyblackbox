@@ -3,10 +3,65 @@ import unittest
 import pandas as pd
 import unittest
 from subprocess import call
+import tkinter as tk 
+
+from Test import openCovid
+
+class MyGUI(tkinter.Frame):
+    def __init__(self, master, **kw):
+        tkinter.Frame.__init__(self, master, **kw)
+        self.info_button = tkinter.Button(self, command=self.info_cmd, text='Info')
+        self.info_button.pack()
+        self.quit_button = tkinter.Button(self, command=self.quit_cmd, text='Quit')
+        self.quit_button.pack()
+
+    def info_cmd(self):
+        messagebox.showinfo('Info', master=self)
+
+    def quit_cmd(self):
+        confirm = messagebox.askokcancel('Quit?', master=self)
+        if confirm:
+            self.destroy()
+
+
+class TKinterTestCase(unittest.TestCase):
+    def setUp(self):
+        self.root = tkinter.Tk()
+        self.root.bind('<Key>', lambda e: print(self.root, e.keysym))
+
+    def tearDown(self):
+        if self.root:
+            self.root.destroy()
+
+    def test_enter(self):
+        v = MyGUI(self.root)
+        v.pack()
+        self.root.update_idletasks()
+
+        # info
+        v.after(100, lambda: self.root.event_generate('<Return>'))
+        v.info_button.invoke()
+
+        # quit
+        def cancel():
+            self.root.event_generate('<Tab>')
+            self.root.event_generate('<Return>')
+
+        v.after(100, cancel)
+        v.quit_button.invoke()
+        self.assertTrue(v.winfo_ismapped())    
+        v.after(100, lambda: self.root.event_generate('<Return>'))
+        v.quit_button.invoke()
+        with self.assertRaises(tkinter.TclError):
+            v.winfo_ismapped()
+
+
+if __name__ == "__main__":
+    unittest.main()
 
 start_time = time.perf_counter()
 
-call(["python", "Tests.py"])
+call(["python", "Test.py"])
 
 
 end_time = time.perf_counter()
@@ -31,13 +86,6 @@ def test_openCovid_totalDailyCases(self):
         self.assertIsNotNone(covidData)
 
 
-#clean covid data
-
-def test_openCovid_cleanCovidData(self):
-    with patch('builtins.input', return_value='test_file.csv'):
-        openCovid()
-        self.assertIsInstance(cleanCovidData, pd.DataFrame)
-        self.assertEqual(list(cleanCovidData.columns), ['areaName', 'date', 'newCasesBySpecimenDate-0_4', 'newCasesBySpecimenDate-5_9', 'newCasesBySpecimenDate-10_14', 'newCasesBySpecimenDate-15_19', 'newCasesBySpecimenDate-20_24', 'newCasesBySpecimenDate-25_29', 'newCasesBySpecimenDate-30_34', 'newCasesBySpecimenDate-35_39', 'newCasesBySpecimenDate-40_44', 'newCasesBySpecimenDate-45_49', 'newCasesBySpecimenDate-50_54', 'newCasesBySpecimenDate-55_59', 'newCasesBySpecimenDate-60_64', 'newCasesBySpecimenDate-65_69', 'newCasesBySpecimenDate-70_74', 'newCasesBySpecimenDate-75_79', 'newCasesBySpecimenDate-80_84', 'newCasesBySpecimenDate-85_89', 'newCasesBySpec
 
 
 #sum covid data
@@ -57,14 +105,6 @@ def test_openCovid_cleanCovidData_date(self):
         self.assertIsInstance(cleanCovidData['Week'], pd.Series)
         self.assertIsInstance(cleanCovidData['Day'], pd.Series)
 
-#test first thirty days function 
-
-def test_openCovid_hartlepoolFirst30Days(self):
-    with patch('builtins.input', return_value='test_file.csv'):
-        openCovid()
-        self.assertIsInstance(hartlepoolFirst30Days, pd.DataFrame)
-        self.assertEqual(len(hartlepoolFirst30Days), 30)
-        self.assertEqual(list(hartlepoolFirst30Days.columns), ['areaName', 'date', 'newCasesBySpecimen
 
 #open_file function 
 
@@ -109,21 +149,6 @@ class TestCompareAreas(unittest.TestCase):
         # Assert
         self.assertEqual(result.shape, expected_output.shape)
         pd.testing.assert_frame_equal(result, expected_output)
-
-if __name__ == '__main__':
-    unittest.main()
-
-
-#Test the highest rolling rates function
-    class TestAreasWithHighestRollingRates(unittest.TestCase):
-    def test_areas_with_highest_rolling_rates(self):
-        # Arrange
-        file_contents = '''date,areaName,newCasesBySpecimenDateRollingRate-10_14,newCasesBySpecimenDateRollingRate-15_19,newCasesBySpecimenDateRollingRate-20_24,newCasesBySpecimenDateRollingRate-25_29,newCasesBySpecimenDateRollingRate-30_34,newCasesBySpecimenDateRollingRate-35_39,newCasesBySpecimenDateRollingRate-40_44,newCasesBySpecimenDateRollingRate-45_49,newCasesBySpecimenDateRollingRate-50_54,newCasesBySpecimenDateRollingRate-55_59,newCasesBySpecimenDateRollingRate-60_64,newCasesBySpecimenDateRollingRate-65_69,newCasesBySpecimenDateRollingRate-70_74,newCasesBySpecimenDateRollingRate-75_79,newCasesBySpecimenDateRollingRate-80_84,newCasesBySpecimenDateRollingRate-85_89,newCasesBySpecimenDateRollingRate-90+
-2022-01-01,Area 1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
-2022-01-02,Area 2,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36
-2022-01-03,Area 3,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54'''
-        expected_output = pd.DataFrame([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54]], columns=['newCasesBySpecimenDateRollingRate-10_14', 'newCasesBySpecimenDateRollingRate-15_19', 'newCasesBySpecimenDateRollingRate-20_24', 'newCasesBySpecimenDateRollingRate-25_29', 'newCasesBySpecimenDateRollingRate-30_34', 'newCasesBySpecimenDateRollingRate-35_39', 'newCasesBySpecimenDateRollingRate-40_44', 'newCasesBySpecimenDateRollingRate-45_49', 'newCasesBySpecimenDateRollingRate-50_54', 'newCases
-
 
 class TestCompareAreasCumulativeSum(unittest.TestCase):
 
